@@ -2,7 +2,7 @@
 
 Suite didáctica e interactiva desarrollada con **HTML5 Canvas**, renderizado dinámico de fórmulas matemáticas en **\LaTeX{} (KaTeX)** y **pseudocódigo con seguimiento reactivo de líneas**. 
 
-Esta aplicación está lista para ser desplegada en **GitHub Pages** o ejecutarse de forma local en cualquier navegador moderno sin dependencias adicionales.
+Esta suite permite visualizar y experimentar de manera interactiva con los métodos numéricos de optimización en cualquier navegador web.
 
 ---
 
@@ -54,43 +54,3 @@ graficos/
     └── index.html                       # Dashboard interactivo de Región de Confianza
 ```
 
----
-
-## 🌐 Cómo Publicar en GitHub Pages
-
-### Opción A: Crear una rama dedicada `gh-pages` (Recomendada)
-Para publicar directamente el contenido de esta carpeta como la página web principal del repositorio:
-
-```bash
-# 1. Asegúrate de tener los cambios confirmados en git
-git add .
-git commit -m "docs: dashboards interactivos de optimizacion"
-
-# 2. Publica la carpeta graficos en la rama gh-pages usando git subtree
-git subtree push --prefix informe/graficos origin gh-pages
-```
-
-Luego ve a **Settings** $\to$ **Pages** en tu repositorio de GitHub y selecciona la rama `gh-pages` con la raíz `/ (root)`. ¡Tu sitio estará en línea de inmediato!
-
----
-
-### Opción B: Servir desde la carpeta `/docs` en la rama `main`
-Si prefieres que GitHub Pages lea desde la rama principal:
-
-1. Copia o mueve la carpeta `informe/graficos` como `docs/` en la raíz de tu proyecto.
-2. En GitHub ve a **Settings** $\to$ **Pages** $\to$ **Build and deployment**:
-   - **Source:** Deploy from a branch
-   - **Branch:** `main` y selecciona la carpeta `/docs`.
-3. Guarda los cambios.
-
----
-
-## 💻 Ejecución Local
-
-Para probar localmente, puedes simplemente hacer **doble clic en `index.html`** de cualquier carpeta, o levantar un servidor web ligero con Python:
-
-```bash
-# Desde la carpeta informe/graficos:
-python -m http.server 8000
-```
-Luego abre tu navegador en `http://localhost:8000`.
