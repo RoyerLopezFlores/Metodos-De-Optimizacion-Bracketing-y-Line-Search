@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approximate Line Search — Dashboard Interactivo con LaTeX y Pseudocódigo</title>
+    <!-- KaTeX para renderizado de LaTeX en HTML -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --accent: #38bdf8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --highlight: #facc15;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 16px;
+        }
+        .header {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h1 { margin: 0; font-size: 1.5rem; color: var(--accent); }
+        .params-bar {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .param-group { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+        input[type="number"] {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            width: 85px;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover { background: #0369a1; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+        .btn-restart { background: #475569; }
+        .btn-restart:hover { background: #334155; }
+        .main-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 16px;
+        }
+        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .canvas-wrapper {
+            background: #020617;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+        }
+        canvas { display: block; width: 100%; height: 420px; }
+        .side-col { display: flex; flex-direction: column; gap: 16px; }
+        .calc-panel {
+            background: #0f172a;
+            border-left: 4px solid var(--accent);
+            border-radius: 6px;
+            padding: 14px;
+            min-height: 200px;
+        }
+        .calc-title { font-weight: bold; color: var(--accent); margin-bottom: 8px; font-size: 1rem; }
+        .pseudo-panel {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: "Fira Code", monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .code-line {
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: pre;
+            display: flex;
+            gap: 10px;
+        }
+        .line-num { color: #64748b; width: 22px; text-align: right; user-select: none; }
+        .active-line {
+            background: rgba(250, 204, 21, 0.25);
+            border-left: 3px solid var(--highlight);
+            color: #fef08a;
+            font-weight: 600;
+        }
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>Búsqueda Lineal Aproximada (Backtracking de Armijo)</h1>
+        <small style="color: #94a3b8;">Simulación didáctica interactiva: cálculo analítico en LaTeX y pseudocódigo reactivo</small>
+    </div>
+</div>
+
+<!-- BARRA DE PARÁMETROS -->
+<div class="params-bar">
+    <div class="param-group">
+        <label>Paso inicial &alpha;:</label>
+        <input type="number" id="inputAlpha" value="10.0" step="1.0" min="1.0">
+    </div>
+    <div class="param-group">
+        <label>Factor p:</label>
+        <input type="number" id="inputP" value="0.5" step="0.1" min="0.1" max="0.9">
+    </div>
+    <div class="param-group">
+        <label>Parámetro &beta;:</label>
+        <input type="number" id="inputBeta" value="0.0001" step="0.0001" min="0.00001">
+    </div>
+    <div class="param-group">
+        <label>Wolfe &sigma;:</label>
+        <input type="number" id="inputSigma" value="0.9" step="0.1" min="0.1" max="0.99">
+    </div>
+    <button onclick="recalcular()">&#9654; Iniciar Optimización</button>
+</div>
+
+<div class="main-grid">
+    <!-- PANEL IZQUIERDO: CANVAS -->
+    <div class="panel">
+        <div class="canvas-wrapper">
+            <canvas id="canvas" width="700" height="420"></canvas>
+        </div>
+        <div class="nav-controls">
+            <button id="btnPrev" onclick="prevStep()">&#9664; Anterior</button>
+            <button id="btnNext" onclick="nextStep()">Siguiente &#9654;</button>
+            <button class="btn-restart" onclick="resetStep()">&#8634; Reiniciar</button>
+            <button id="btnAuto" onclick="toggleAutoPlay()">&#9658; Auto</button>
+            <span id="stepCounter" style="margin-left:auto; font-weight:bold; color:var(--accent);">Micro-Paso 0 / 0</span>
+        </div>
+    </div>
+
+    <!-- PANEL DERECHO: LATEX + PSEUDOCÓDIGO -->
+    <div class="side-col">
+        <!-- CÁLCULOS MATEMÁTICOS EN LATEX -->
+        <div class="panel calc-panel">
+            <div class="calc-title" id="calcTitle">Cálculos de Descenso Suficiente (Armijo)</div>
+            <div id="latexContainer">Cargando KaTeX...</div>
+        </div>
+
+        <!-- PSEUDOCÓDIGO CON RESALTADO -->
+        <div class="panel">
+            <div style="font-weight:bold; margin-bottom:8px; font-size:0.95rem; color:#94a3b8;">
+                Pseudocódigo Activo (Línea en Ejecución)
+            </div>
+            <div class="pseudo-panel" id="pseudoCode">
+                <div class="code-line" id="l1"><span class="line-num">1</span><span>y = f(x);  g = grad_f(x)</span></div>
+                <div class="code-line" id="l2"><span class="line-num">2</span><span>pendiente = dot(g, d)  # grad_f^T * d &lt; 0</span></div>
+                <div class="code-line" id="l3"><span class="line-num">3</span><span>mientras f(x + alpha * d) &gt; y + beta * alpha * pendiente:</span></div>
+                <div class="code-line" id="l4"><span class="line-num">4</span><span>    alpha = alpha * p  # Retroceso (backtracking)</span></div>
+                <div class="code-line" id="l5"><span class="line-num">5</span><span>verificar curvatura: dot(grad_f(x + alpha*d), d) &gt;= sigma * pendiente</span></div>
+                <div class="code-line" id="l6"><span class="line-num">6</span><span>retornar alpha, x + alpha * d</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función del Ejemplo 4.2: f(x1, x2) = x1^2 + x1*x2 + x2^2
+// En x = [1, 2], d = [-1, -1]
+function phi(alpha) {
+    const x1 = 1.0 - alpha;
+    const x2 = 2.0 - alpha;
+    return x1*x1 + x1*x2 + x2*x2;
+}
+function grad_phi(alpha) {
+    const x1 = 1.0 - alpha;
+    const x2 = 2.0 - alpha;
+    const g1 = 2*x1 + x2;
+    const g2 = x1 + 2*x2;
+    return g1*(-1.0) + g2*(-1.0); // derivada respecto a alpha
+}
+
+const y0 = phi(0); // 7.0
+const slope0 = -9.0; // g^T d
+
+let microSteps = [];
+let currentIdx = 0;
+let autoTimer = null;
+
+function renderLatex(elementId, latexStr) {
+    const el = document.getElementById(elementId);
+    if (window.katex) katex.render(latexStr, el, { throwOnError: false, displayMode: true });
+    else el.innerText = latexStr;
+}
+
+function highlightLine(lineId) {
+    document.querySelectorAll(".code-line").forEach(l => l.classList.remove("active-line"));
+    if (lineId) {
+        const target = document.getElementById(lineId);
+        if (target) target.classList.add("active-line");
+    }
+}
+
+function generarTrazaLineSearch(alphaInit, p, beta, sigma) {
+    const steps = [];
+    let alpha = alphaInit;
+    let k = 0;
+
+    steps.push({
+        tipo: "init",
+        titulo: "Inicialización del Descenso de Línea",
+        alpha: alpha,
+        yCand: phi(alpha),
+        threshold: y0 + beta * alpha * slope0,
+        cond: null,
+        activeLine: "l2",
+        latex: `\\begin{aligned}
+        x &= [1.0, 2.0]^T, \\quad d = [-1.0, -1.0]^T \\\\[4pt]
+        f(x) &= ${y0.toFixed(4)}, \\quad \\nabla f(x) = [4.0, 5.0]^T \\\\[4pt]
+        \\text{Pendiente inicial: } & g^T d = 4(-1) + 5(-1) = \\mathbf{-9.0} < 0 \\\\[4pt]
+        \\text{Paso inicial: } & \\alpha_0 = ${alpha.toFixed(2)}, \\quad \\beta = ${beta}, \\quad p = ${p}
+        \\end{aligned}`
+    });
+
+    while (true) {
+        k++;
+        let yCand = phi(alpha);
+        let threshold = y0 + beta * alpha * slope0;
+        let cond = (yCand <= threshold);
+
+        // Sub-paso A: Evaluar Armijo
+        steps.push({
+            tipo: "eval",
+            titulo: `Iteración ${k} — Verificación de Condición de Armijo`,
+            alpha: alpha,
+            yCand: yCand,
+            threshold: threshold,
+            cond: cond,
+            activeLine: "l3",
+            latex: `\\begin{aligned}
+            \\alpha &= ${alpha.toFixed(4)} \\\\[4pt]
+            f(x + \\alpha d) &= \\mathbf{${yCand.toFixed(4)}} \\\\[4pt]
+            \\text{Umbral Armijo: } & f(x) + \\beta \\alpha (g^T d) = ${y0.toFixed(2)} + (${beta})(${alpha.toFixed(2)})(-9) = \\mathbf{${threshold.toFixed(4)}} \\\\[6pt]
+            \\mathbf{¿f(x') \\le \\text{Umbral}?} &\\iff ${yCand.toFixed(4)} \\le ${threshold.toFixed(4)} \\implies \\mathbf{${cond ? "\\text{VERDADERO (ACEPTADO)}" : "\\text{FALSO (RECHAZADO)}"}}\\end{aligned}`
+        });
+
+        if (cond) {
+            // Evaluar condición de curvatura de Wolfe
+            let gNext = grad_phi(alpha);
+            let curvThreshold = sigma * slope0;
+            let curvCond = (gNext >= curvThreshold);
+
+            steps.push({
+                tipo: "final",
+                titulo: `Paso Aceptado y Verificación de Curvatura de Wolfe`,
+                alpha: alpha,
+                yCand: yCand,
+                threshold: threshold,
+                cond: true,
+                activeLine: "l5",
+                latex: `\\begin{aligned}
+                \\mathbf{\\alpha^* \\text{ óptimo: }} & \\mathbf{${alpha.toFixed(4)}} \\\\[4pt]
+                x' = x + \\alpha^* d &= [${(1.0 - alpha).toFixed(4)}, ${(2.0 - alpha).toFixed(4)}]^T, \\quad f(x') = ${yCand.toFixed(4)} \\\\[6pt]
+                \\text{Segunda Condición de Wolfe: } & \\nabla f(x')^T d = ${gNext.toFixed(4)} \\ge \\sigma(g^T d) = ${curvThreshold.toFixed(4)} \\\\[4pt]
+                \\mathbf{¿Curvatura satisfecha?} &\\implies \\mathbf{${curvCond ? "\\text{VERDADERO}" : "\\text{FALSO}"}}
+                \\end{aligned}`
+            });
+            break;
+        } else {
+            let nextAlpha = alpha * p;
+            steps.push({
+                tipo: "backtrack",
+                titulo: `Iteración ${k} — Decisión: Retroceso de Paso`,
+                alpha: alpha,
+                yCand: yCand,
+                threshold: threshold,
+                cond: false,
+                activeLine: "l4",
+                latex: `\\begin{aligned}
+                \\text{Sobrepaso detectado: } & f(x') \\text{ excede la cota de Armijo.} \\\\[4pt]
+                \\text{Regla de retroceso: } & \\alpha \\leftarrow \\alpha \\cdot p = ${alpha.toFixed(4)} \\cdot ${p} = \\mathbf{${nextAlpha.toFixed(4)}}
+                \\end{aligned}`
+            });
+            alpha = nextAlpha;
+        }
+
+        if (alpha < 1e-6) break;
+    }
+
+    return steps;
+}
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function recalcular() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("btnAuto").innerText = "► Auto"; }
+    const aVal = parseFloat(document.getElementById("inputAlpha").value);
+    const pVal = parseFloat(document.getElementById("inputP").value);
+    const betaVal = parseFloat(document.getElementById("inputBeta").value);
+    const sigmaVal = parseFloat(document.getElementById("inputSigma").value);
+
+    microSteps = generarTrazaLineSearch(aVal, pVal, betaVal, sigmaVal);
+    currentIdx = 0;
+    actualizarVista();
+}
+
+function toX(a, maxA) { return 60 + (a / maxA) * (canvas.width - 120); }
+function toY(y, maxY) { return (canvas.height - 50) - (y / maxY) * (canvas.height - 80); }
+
+function dibujarPaso() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const st = microSteps[currentIdx];
+    const alphaInit = parseFloat(document.getElementById("inputAlpha").value);
+    const maxA = alphaInit * 1.1;
+    const maxY = Math.max(phi(alphaInit) * 1.1, 20.0);
+
+    // Eje X
+    ctx.strokeStyle = "#334155";
+    ctx.beginPath();
+    ctx.moveTo(toX(0, maxA), toY(0, maxY));
+    ctx.lineTo(toX(maxA, maxA), toY(0, maxY));
+    ctx.stroke();
+
+    // Zona admisible de Armijo
+    const beta = parseFloat(document.getElementById("inputBeta").value);
+    ctx.fillStyle = "rgba(34, 197, 94, 0.12)";
+    ctx.beginPath();
+    ctx.moveTo(toX(0, maxA), toY(y0, maxY));
+    for (let a = 0; a <= maxA; a += 0.2) {
+        ctx.lineTo(toX(a, maxA), toY(y0 + beta * a * slope0, maxY));
+    }
+    ctx.lineTo(toX(maxA, maxA), toY(0, maxY));
+    ctx.lineTo(toX(0, maxA), toY(0, maxY));
+    ctx.fill();
+
+    // Recta límite de Armijo
+    ctx.strokeStyle = "#eab308";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(toX(0, maxA), toY(y0, maxY));
+    ctx.lineTo(toX(maxA, maxA), toY(y0 + beta * maxA * slope0, maxY));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Curva phi(alpha)
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let a = 0; a <= maxA; a += 0.1) {
+        const cx = toX(a, maxA), cy = toY(phi(a), maxY);
+        if (a === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+
+    // Marcador del punto evaluado
+    const px = toX(st.alpha, maxA), py = toY(st.yCand, maxY);
+    const isAcc = (st.cond === true);
+    ctx.fillStyle = isAcc ? "#22c55e" : "#ef4444";
+    ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+
+    ctx.font = "bold 13px system-ui";
+    ctx.fillText(`α = ${st.alpha.toFixed(2)}`, px - 25, py - 14);
+
+    // Línea vertical
+    ctx.strokeStyle = isAcc ? "rgba(34, 197, 94, 0.4)" : "rgba(239, 68, 68, 0.4)";
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(px, canvas.height - 50); ctx.lineTo(px, py); ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function actualizarVista() {
+    const st = microSteps[currentIdx];
+    document.getElementById("stepCounter").innerText = `Micro-Paso ${currentIdx + 1} / ${microSteps.length}`;
+    document.getElementById("btnPrev").disabled = (currentIdx === 0);
+    document.getElementById("btnNext").disabled = (currentIdx === microSteps.length - 1);
+    document.getElementById("calcTitle").innerText = st.titulo;
+    renderLatex("latexContainer", st.latex);
+    highlightLine(st.activeLine);
+    dibujarPaso();
+}
+
+function nextStep() { if (currentIdx < microSteps.length - 1) { currentIdx++; actualizarVista(); } }
+function prevStep() { if (currentIdx > 0) { currentIdx--; actualizarVista(); } }
+function resetStep() { currentIdx = 0; actualizarVista(); }
+function toggleAutoPlay() {
+    const btn = document.getElementById("btnAuto");
+    if (autoTimer) {
+        clearInterval(autoTimer); autoTimer = null; btn.innerText = "► Auto";
+    } else {
+        btn.innerText = "❚❚ Pausa";
+        autoTimer = setInterval(() => {
+            if (currentIdx < microSteps.length - 1) nextStep();
+            else { clearInterval(autoTimer); autoTimer = null; btn.innerText = "► Auto"; }
+        }, 1800);
+    }
+}
+
+window.addEventListener("load", () => recalcular());
+</script>
+
+</body>
+</html>

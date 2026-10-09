@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajuste Cuadrático — Dashboard Interactivo con LaTeX y Pseudocódigo</title>
+    <!-- KaTeX para renderizado de LaTeX en HTML -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --accent: #a855f7;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --highlight: #facc15;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 16px;
+        }
+        .header {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h1 { margin: 0; font-size: 1.5rem; color: var(--accent); }
+        .params-bar {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .param-group { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+        input[type="number"] {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            width: 75px;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #9333ea;
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover { background: #7e22ce; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+        .btn-restart { background: #475569; }
+        .btn-restart:hover { background: #334155; }
+        .main-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 16px;
+        }
+        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .canvas-wrapper {
+            background: #020617;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+        }
+        canvas { display: block; width: 100%; height: 420px; }
+        .side-col { display: flex; flex-direction: column; gap: 16px; }
+        .calc-panel {
+            background: #0f172a;
+            border-left: 4px solid var(--accent);
+            border-radius: 6px;
+            padding: 14px;
+            min-height: 200px;
+        }
+        .calc-title { font-weight: bold; color: var(--accent); margin-bottom: 8px; font-size: 1rem; }
+        .pseudo-panel {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: "Fira Code", monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .code-line {
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: pre;
+            display: flex;
+            gap: 10px;
+        }
+        .line-num { color: #64748b; width: 22px; text-align: right; user-select: none; }
+        .active-line {
+            background: rgba(250, 204, 21, 0.25);
+            border-left: 3px solid var(--highlight);
+            color: #fef08a;
+            font-weight: 600;
+        }
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>Búsqueda por Ajuste Cuadrático (Quadratic Fit Search)</h1>
+        <small style="color: #94a3b8;">Simulación didáctica interactiva: cálculo analítico en LaTeX y pseudocódigo reactivo</small>
+    </div>
+</div>
+
+<!-- BARRA DE PARÁMETROS -->
+<div class="params-bar">
+    <div class="param-group">
+        <label>Punto a:</label>
+        <input type="number" id="inputA" value="0.0" step="0.2">
+    </div>
+    <div class="param-group">
+        <label>Punto b:</label>
+        <input type="number" id="inputB" value="1.5" step="0.2">
+    </div>
+    <div class="param-group">
+        <label>Punto c:</label>
+        <input type="number" id="inputC" value="3.0" step="0.2">
+    </div>
+    <div class="param-group">
+        <label>Evaluaciones (n):</label>
+        <input type="number" id="inputN" value="6" min="4" max="15" step="1">
+    </div>
+    <button onclick="recalcular()">&#9654; Iniciar Optimización</button>
+</div>
+
+<div class="main-grid">
+    <!-- PANEL IZQUIERDO: CANVAS -->
+    <div class="panel">
+        <div class="canvas-wrapper">
+            <canvas id="canvas" width="700" height="420"></canvas>
+        </div>
+        <div class="nav-controls">
+            <button id="btnPrev" onclick="prevStep()">&#9664; Anterior</button>
+            <button id="btnNext" onclick="nextStep()">Siguiente &#9654;</button>
+            <button class="btn-restart" onclick="resetStep()">&#8634; Reiniciar</button>
+            <button id="btnAuto" onclick="toggleAutoPlay()">&#9658; Auto</button>
+            <span id="stepCounter" style="margin-left:auto; font-weight:bold; color:var(--accent);">Micro-Paso 0 / 0</span>
+        </div>
+    </div>
+
+    <!-- PANEL DERECHO: LATEX + PSEUDOCÓDIGO -->
+    <div class="side-col">
+        <!-- CÁLCULOS MATEMÁTICOS EN LATEX -->
+        <div class="panel calc-panel">
+            <div class="calc-title" id="calcTitle">Cálculos Matemáticos del Ajuste Parabólico</div>
+            <div id="latexContainer">Cargando KaTeX...</div>
+        </div>
+
+        <!-- PSEUDOCÓDIGO CON RESALTADO -->
+        <div class="panel">
+            <div style="font-weight:bold; margin-bottom:8px; font-size:0.95rem; color:#94a3b8;">
+                Pseudocódigo Activo (Línea en Ejecución)
+            </div>
+            <div class="pseudo-panel" id="pseudoCode">
+                <div class="code-line" id="l1"><span class="line-num">1</span><span>ya = f(a);  yb = f(b);  yc = f(c)</span></div>
+                <div class="code-line" id="l2"><span class="line-num">2</span><span>para i = 1 hasta n - 3 hacer:</span></div>
+                <div class="code-line" id="l3"><span class="line-num">3</span><span>    num = ya*(b^2-c^2) + yb*(c^2-a^2) + yc*(a^2-b^2)</span></div>
+                <div class="code-line" id="l4"><span class="line-num">4</span><span>    den = ya*(b-c)     + yb*(c-a)     + yc*(a-b)</span></div>
+                <div class="code-line" id="l5"><span class="line-num">5</span><span>    x = 0.5 * (num / den);  yx = f(x)</span></div>
+                <div class="code-line" id="l6"><span class="line-num">6</span><span>    si x &gt; b:</span></div>
+                <div class="code-line" id="l7"><span class="line-num">7</span><span>        si yx &gt; yb:  c = x; yc = yx</span></div>
+                <div class="code-line" id="l8"><span class="line-num">8</span><span>        sino:        a = b; ya = yb; b = x; yb = yx</span></div>
+                <div class="code-line" id="l9"><span class="line-num">9</span><span>    sino si x &lt; b:</span></div>
+                <div class="code-line" id="l10"><span class="line-num">10</span><span>        si yx &gt; yb:  a = x; ya = yx</span></div>
+                <div class="code-line" id="l11"><span class="line-num">11</span><span>        sino:        c = b; yc = yb; b = x; yb = yx</span></div>
+                <div class="code-line" id="l12"><span class="line-num">12</span><span>retornar (a, b, c)</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function f(x) { return Math.pow(x - 2.0, 2) + Math.cos(x); }
+
+function fitParabola(x1, y1, x2, y2, x3, y3) {
+    const denom = (x1 - x2) * (x1 - x3) * (x2 - x3);
+    if (Math.abs(denom) < 1e-14) return (x) => y2;
+    const A = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom;
+    const B = (x3*x3 * (y1 - y2) + x2*x2 * (y3 - y1) + x1*x1 * (y2 - y3)) / denom;
+    const C = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / denom;
+    return (x) => A * x * x + B * x + C;
+}
+
+let microSteps = [];
+let currentIdx = 0;
+let autoTimer = null;
+
+function renderLatex(elementId, latexStr) {
+    const el = document.getElementById(elementId);
+    if (window.katex) katex.render(latexStr, el, { throwOnError: false, displayMode: true });
+    else el.innerText = latexStr;
+}
+
+function highlightLine(lineId) {
+    document.querySelectorAll(".code-line").forEach(l => l.classList.remove("active-line"));
+    if (lineId) {
+        const target = document.getElementById(lineId);
+        if (target) target.classList.add("active-line");
+    }
+}
+
+function generarTrazaAjusteCuadratico(aInit, bInit, cInit, n) {
+    const steps = [];
+    let a = aInit, b = bInit, c = cInit;
+    let ya = f(a), yb = f(b), yc = f(c);
+
+    steps.push({
+        tipo: "init",
+        titulo: "Inicialización de la Terna de Puntos (a < b < c)",
+        a: a, b: b, c: c, ya: ya, yb: yb, yc: yc,
+        xStar: null, yStar: null,
+        activeLine: "l1",
+        latex: `\\begin{aligned}
+        a &= ${a.toFixed(4)}, \\quad f(a) = ${ya.toFixed(4)} \\\\[4pt]
+        b &= ${b.toFixed(4)}, \\quad f(b) = ${yb.toFixed(4)} \\\\[4pt]
+        c &= ${c.toFixed(4)}, \\quad f(c) = ${yc.toFixed(4)}
+        \\end{aligned}`
+    });
+
+    for (let i = 1; i <= n - 3; i++) {
+        let num = ya*(b*b - c*c) + yb*(c*c - a*a) + yc*(a*a - b*b);
+        let den = ya*(b - c)     + yb*(c - a)     + yc*(a - b);
+        if (Math.abs(den) < 1e-14) break;
+
+        let xStar = 0.5 * (num / den);
+        let yStar = f(xStar);
+
+        // Sub-paso A: Cálculo analítico del vértice
+        steps.push({
+            tipo: "calc",
+            titulo: `Iteración ${i} — Cálculo del Vértice Analítico x*`,
+            a: a, b: b, c: c, ya: ya, yb: yb, yc: yc,
+            xStar: xStar, yStar: yStar,
+            activeLine: "l5",
+            latex: `\\begin{aligned}
+            \\text{Vértice } x^* &= \\frac{1}{2} \\frac{y_a(b^2 - c^2) + y_b(c^2 - a^2) + y_c(a^2 - b^2)}{y_a(b - c) + y_b(c - a) + y_c(a - b)} \\\\[6pt]
+            &= 0.5 \\cdot \\left( \\frac{${num.toFixed(4)}}{${den.toFixed(4)}} \\right) = \\mathbf{${xStar.toFixed(5)}} \\\\[4pt]
+            f(x^*) &= \\mathbf{${yStar.toFixed(5)}}
+            \\end{aligned}`
+        });
+
+        // Sub-paso B: Decisión y reorganización
+        if (xStar > b) {
+            if (yStar > yb) {
+                c = xStar; yc = yStar;
+                steps.push({
+                    tipo: "update",
+                    titulo: `Iteración ${i} — Decisión: b se mantiene como mínimo`,
+                    a: a, b: b, c: c, ya: ya, yb: yb, yc: yc,
+                    xStar: xStar, yStar: yStar,
+                    activeLine: "l7",
+                    latex: `\\begin{aligned}
+                    \\text{Condición: } & x^* > b \\text{ y } f(x^*) > f(b) \\\\[4pt]
+                    \\text{Decisión: } & c \\leftarrow x^* = ${c.toFixed(5)} \\\\[4pt]
+                    \\text{Nueva terna: } & [${a.toFixed(5)}, ${b.toFixed(5)}, ${c.toFixed(5)}]
+                    \\end{aligned}`
+                });
+            } else {
+                a = b; ya = yb; b = xStar; yb = yStar;
+                steps.push({
+                    tipo: "update",
+                    titulo: `Iteración ${i} — Decisión: x* es el nuevo mínimo`,
+                    a: a, b: b, c: c, ya: ya, yb: yb, yc: yc,
+                    xStar: xStar, yStar: yStar,
+                    activeLine: "l8",
+                    latex: `\\begin{aligned}
+                    \\text{Condición: } & x^* > b \\text{ y } f(x^*) \\le f(b) \\\\[4pt]
+                    \\text{Decisión: } & a \\leftarrow b, \\quad b \\leftarrow x^* = ${b.toFixed(5)} \\\\[4pt]
+                    \\text{Nueva terna: } & [${a.toFixed(5)}, ${b.toFixed(5)}, ${c.toFixed(5)}]
+                    \\end{aligned}`
+                });
+            }
+        } else if (xStar < b) {
+            if (yStar > yb) {
+                a = xStar; ya = yStar;
+                steps.push({
+                    tipo: "update",
+                    titulo: `Iteración ${i} — Decisión: b se mantiene como mínimo`,
+                    a: a, b: b, c: c, ya: ya, yb: yb, yc: yc,
+                    xStar: xStar, yStar: yStar,
+                    activeLine: "l10",
+                    latex: `\\begin{aligned}
+                    \\text{Condición: } & x^* < b \\text{ y } f(x^*) > f(b) \\\\[4pt]
+                    \\text{Decisión: } & a \\leftarrow x^* = ${a.toFixed(5)} \\\\[4pt]
+                    \\text{Nueva terna: } & [${a.toFixed(5)}, ${b.toFixed(5)}, ${c.toFixed(5)}]
+                    \\end{aligned}`
+                });
+            } else {
+                c = b; yc = yb; b = xStar; yb = yStar;
+                steps.push({
+                    tipo: "update",
+                    titulo: `Iteración ${i} — Decisión: x* es el nuevo mínimo`,
+                    a: a, b: b, c: c, ya: ya, yb: yb, yc: yc,
+                    xStar: xStar, yStar: yStar,
+                    activeLine: "l11",
+                    latex: `\\begin{aligned}
+                    \\text{Condición: } & x^* < b \\text{ y } f(x^*) \\le f(b) \\\\[4pt]
+                    \\text{Decisión: } & c \\leftarrow b, \\quad b \\leftarrow x^* = ${b.toFixed(5)} \\\\[4pt]
+                    \\text{Nueva terna: } & [${a.toFixed(5)}, ${b.toFixed(5)}, ${c.toFixed(5)}]
+                    \\end{aligned}`
+                });
+            }
+        }
+    }
+
+    steps.push({
+        tipo: "final",
+        titulo: "Resultado Final: Mínimo Local Acotado",
+        a: a, b: b, c: c, ya: ya, yb: yb, yc: yc,
+        xStar: null, yStar: null,
+        activeLine: "l12",
+        latex: `\\begin{aligned}
+        \\mathbf{x^* \\text{ óptimo: }} & \\mathbf{${b.toFixed(6)}}, \\quad \\mathbf{f(x^*) = ${yb.toFixed(6)}} \\\\[4pt]
+        \\text{Intervalo final: } & [${a.toFixed(6)}, ${c.toFixed(6)}] \\\\[4pt]
+        \\text{Ancho: } & ${(c - a).toFixed(6)}
+        \\end{aligned}`
+    });
+
+    return steps;
+}
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function recalcular() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("btnAuto").innerText = "► Auto"; }
+    const aVal = parseFloat(document.getElementById("inputA").value);
+    const bVal = parseFloat(document.getElementById("inputB").value);
+    const cVal = parseFloat(document.getElementById("inputC").value);
+    const nVal = parseInt(document.getElementById("inputN").value);
+
+    microSteps = generarTrazaAjusteCuadratico(aVal, bVal, cVal, nVal);
+    currentIdx = 0;
+    actualizarVista();
+}
+
+function toX(x, minX, maxX) { return 60 + ((x - minX) / (maxX - minX)) * (canvas.width - 120); }
+function toY(y, minY, maxY) { return (canvas.height - 50) - ((y - minY) / (maxY - minY)) * (canvas.height - 80); }
+
+function dibujarPaso() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const st = microSteps[currentIdx];
+    const minX = -0.5, maxX = 3.5;
+    const minY = -1.2, maxY = 5.5;
+
+    // Eje X
+    ctx.strokeStyle = "#334155";
+    ctx.beginPath();
+    ctx.moveTo(toX(minX, minX, maxX), toY(0, minY, maxY));
+    ctx.lineTo(toX(maxX, minX, maxX), toY(0, minY, maxY));
+    ctx.stroke();
+
+    // Curva f(x)
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let px = minX; px <= maxX; px += 0.04) {
+        const cx = toX(px, minX, maxX), cy = toY(f(px), minY, maxY);
+        if (px === minX) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+
+    // Parábola interpolante
+    const q = fitParabola(st.a, st.ya, st.b, st.yb, st.c, st.yc);
+    ctx.strokeStyle = "#e879f9";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    for (let px = minX + 0.2; px <= maxX - 0.2; px += 0.04) {
+        const cx = toX(px, minX, maxX), cy = toY(q(px), minY, maxY);
+        if (px === minX + 0.2) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Puntos a, b, c
+    function dibujarPunto(xVal, yVal, label, color) {
+        const cx = toX(xVal, minX, maxX), cy = toY(yVal, minY, maxY);
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.font = "bold 12px system-ui";
+        ctx.fillText(`${label} (${xVal.toFixed(2)})`, cx - 20, cy - 12);
+    }
+
+    dibujarPunto(st.a, st.ya, "a", "#22c55e");
+    dibujarPunto(st.b, st.yb, "b", "#f59e0b");
+    dibujarPunto(st.c, st.yc, "c", "#3b82f6");
+
+    // Vértice analítico x*
+    if (st.xStar !== null && st.yStar !== null) {
+        const vx = toX(st.xStar, minX, maxX), vy = toY(st.yStar, minY, maxY);
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath(); ctx.arc(vx, vy, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#fef08a"; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillText(`x* (${st.xStar.toFixed(3)})`, vx - 30, vy + 22);
+    }
+}
+
+function actualizarVista() {
+    const st = microSteps[currentIdx];
+    document.getElementById("stepCounter").innerText = `Micro-Paso ${currentIdx + 1} / ${microSteps.length}`;
+    document.getElementById("btnPrev").disabled = (currentIdx === 0);
+    document.getElementById("btnNext").disabled = (currentIdx === microSteps.length - 1);
+    document.getElementById("calcTitle").innerText = st.titulo;
+    renderLatex("latexContainer", st.latex);
+    highlightLine(st.activeLine);
+    dibujarPaso();
+}
+
+function nextStep() { if (currentIdx < microSteps.length - 1) { currentIdx++; actualizarVista(); } }
+function prevStep() { if (currentIdx > 0) { currentIdx--; actualizarVista(); } }
+function resetStep() { currentIdx = 0; actualizarVista(); }
+function toggleAutoPlay() {
+    const btn = document.getElementById("btnAuto");
+    if (autoTimer) {
+        clearInterval(autoTimer); autoTimer = null; btn.innerText = "► Auto";
+    } else {
+        btn.innerText = "❚❚ Pausa";
+        autoTimer = setInterval(() => {
+            if (currentIdx < microSteps.length - 1) nextStep();
+            else { clearInterval(autoTimer); autoTimer = null; btn.innerText = "► Auto"; }
+        }, 1800);
+    }
+}
+
+window.addEventListener("load", () => recalcular());
+</script>
+
+</body>
+</html>

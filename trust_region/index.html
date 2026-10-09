@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trust Region Methods — Dashboard Interactivo con LaTeX y Pseudocódigo</title>
+    <!-- KaTeX para renderizado de LaTeX en HTML -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --accent: #ec4899;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --highlight: #facc15;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 16px;
+        }
+        .header {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h1 { margin: 0; font-size: 1.5rem; color: var(--accent); }
+        .params-bar {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .param-group { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+        input[type="number"] {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            width: 75px;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #db2777;
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover { background: #be185d; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+        .btn-restart { background: #475569; }
+        .btn-restart:hover { background: #334155; }
+        .main-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 16px;
+        }
+        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .canvas-wrapper {
+            background: #020617;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+        }
+        canvas { display: block; width: 100%; height: 420px; }
+        .side-col { display: flex; flex-direction: column; gap: 16px; }
+        .calc-panel {
+            background: #0f172a;
+            border-left: 4px solid var(--accent);
+            border-radius: 6px;
+            padding: 14px;
+            min-height: 200px;
+        }
+        .calc-title { font-weight: bold; color: var(--accent); margin-bottom: 8px; font-size: 1rem; }
+        .pseudo-panel {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: "Fira Code", monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .code-line {
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: pre;
+            display: flex;
+            gap: 10px;
+        }
+        .line-num { color: #64748b; width: 22px; text-align: right; user-select: none; }
+        .active-line {
+            background: rgba(250, 204, 21, 0.25);
+            border-left: 3px solid var(--highlight);
+            color: #fef08a;
+            font-weight: 600;
+        }
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>Métodos de Región de Confianza (Trust Region Methods)</h1>
+        <small style="color: #94a3b8;">Simulación didáctica interactiva: cálculo analítico en LaTeX y pseudocódigo reactivo</small>
+    </div>
+</div>
+
+<!-- BARRA DE PARÁMETROS -->
+<div class="params-bar">
+    <div class="param-group">
+        <label>x1 inicial:</label>
+        <input type="number" id="inputX1" value="-1.2" step="0.1">
+    </div>
+    <div class="param-group">
+        <label>x2 inicial:</label>
+        <input type="number" id="inputX2" value="1.0" step="0.1">
+    </div>
+    <div class="param-group">
+        <label>Radio inicial &delta;:</label>
+        <input type="number" id="inputDelta" value="0.5" step="0.1" min="0.05">
+    </div>
+    <div class="param-group">
+        <label>&eta;1:</label>
+        <input type="number" id="inputEta1" value="0.25" step="0.05">
+    </div>
+    <div class="param-group">
+        <label>&eta;2:</label>
+        <input type="number" id="inputEta2" value="0.5" step="0.05">
+    </div>
+    <div class="param-group">
+        <label>Pasos máx:</label>
+        <input type="number" id="inputK" value="8" step="1" min="3" max="20">
+    </div>
+    <button onclick="recalcular()">&#9654; Iniciar Optimización</button>
+</div>
+
+<div class="main-grid">
+    <!-- PANEL IZQUIERDO: CANVAS -->
+    <div class="panel">
+        <div class="canvas-wrapper">
+            <canvas id="canvas" width="700" height="420"></canvas>
+        </div>
+        <div class="nav-controls">
+            <button id="btnPrev" onclick="prevStep()">&#9664; Anterior</button>
+            <button id="btnNext" onclick="nextStep()">Siguiente &#9654;</button>
+            <button class="btn-restart" onclick="resetStep()">&#8634; Reiniciar</button>
+            <button id="btnAuto" onclick="toggleAutoPlay()">&#9658; Auto</button>
+            <span id="stepCounter" style="margin-left:auto; font-weight:bold; color:var(--accent);">Micro-Paso 0 / 0</span>
+        </div>
+    </div>
+
+    <!-- PANEL DERECHO: LATEX + PSEUDOCÓDIGO -->
+    <div class="side-col">
+        <!-- CÁLCULOS MATEMÁTICOS EN LATEX -->
+        <div class="panel calc-panel">
+            <div class="calc-title" id="calcTitle">Cálculos de la Región de Confianza</div>
+            <div id="latexContainer">Cargando KaTeX...</div>
+        </div>
+
+        <!-- PSEUDOCÓDIGO CON RESALTADO -->
+        <div class="panel">
+            <div style="font-weight:bold; margin-bottom:8px; font-size:0.95rem; color:#94a3b8;">
+                Pseudocódigo Activo (Línea en Ejecución)
+            </div>
+            <div class="pseudo-panel" id="pseudoCode">
+                <div class="code-line" id="l1"><span class="line-num">1</span><span>para k = 1 hasta k_max hacer:</span></div>
+                <div class="code-line" id="l2"><span class="line-num">2</span><span>    p, pred_imp = resolver_subproblema(g, H, delta)</span></div>
+                <div class="code-line" id="l3"><span class="line-num">3</span><span>    actual_imp = f(x) - f(x + p)</span></div>
+                <div class="code-line" id="l4"><span class="line-num">4</span><span>    r = actual_imp / pred_imp  # ratio eta</span></div>
+                <div class="code-line" id="l5"><span class="line-num">5</span><span>    si r &lt; eta1:</span></div>
+                <div class="code-line" id="l6"><span class="line-num">6</span><span>        delta = delta * gamma1  # Rechazar y contraer</span></div>
+                <div class="code-line" id="l7"><span class="line-num">7</span><span>    sino:</span></div>
+                <div class="code-line" id="l8"><span class="line-num">8</span><span>        x = x + p  # Aceptar paso</span></div>
+                <div class="code-line" id="l9"><span class="line-num">9</span><span>        si r &gt; eta2 y ||p|| &gt;= 0.9 * delta:</span></div>
+                <div class="code-line" id="l10"><span class="line-num">10</span><span>            delta = delta * gamma2  # Expandir radio</span></div>
+                <div class="code-line" id="l11"><span class="line-num">11</span><span>retornar x</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función de Rosenbrock
+function f(x1, x2) {
+    return 100.0 * Math.pow(x2 - x1*x1, 2) + Math.pow(1.0 - x1, 2);
+}
+function grad(x1, x2) {
+    return [
+        -400.0 * x1 * (x2 - x1*x1) - 2.0 * (1.0 - x1),
+        200.0 * (x2 - x1*x1)
+    ];
+}
+function hess(x1, x2) {
+    return [
+        [-400.0 * x2 + 1200.0 * x1*x1 + 2.0, -400.0 * x1],
+        [-400.0 * x1, 200.0]
+    ];
+}
+
+let microSteps = [];
+let currentIdx = 0;
+let autoTimer = null;
+
+function renderLatex(elementId, latexStr) {
+    const el = document.getElementById(elementId);
+    if (window.katex) katex.render(latexStr, el, { throwOnError: false, displayMode: true });
+    else el.innerText = latexStr;
+}
+
+function highlightLine(lineId) {
+    document.querySelectorAll(".code-line").forEach(l => l.classList.remove("active-line"));
+    if (lineId) {
+        const target = document.getElementById(lineId);
+        if (target) target.classList.add("active-line");
+    }
+}
+
+function generarTrazaTrustRegion(x1Init, x2Init, deltaInit, eta1, eta2, kMax) {
+    const steps = [];
+    let x = [x1Init, x2Init];
+    let delta = deltaInit;
+    const gamma1 = 0.5, gamma2 = 2.0;
+
+    for (let k = 1; k <= kMax; k++) {
+        let y = f(x[0], x[1]);
+        let g = grad(x[0], x[1]);
+        let H = hess(x[0], x[1]);
+        let normG = Math.sqrt(g[0]*g[0] + g[1]*g[1]);
+        if (normG < 1e-5) break;
+
+        // Subproblema Cauchy
+        let Hg = [H[0][0]*g[0] + H[0][1]*g[1], H[1][0]*g[0] + H[1][1]*g[1]];
+        let gHg = g[0]*Hg[0] + g[1]*Hg[1];
+        let tau;
+        if (gHg <= 0) tau = delta / normG;
+        else tau = Math.min(Math.pow(normG, 3) / (delta * gHg), delta / normG);
+
+        let p = [-tau * g[0], -tau * g[1]];
+        let normP = Math.sqrt(p[0]*p[0] + p[1]*p[1]);
+        let Hp = [H[0][0]*p[0] + H[0][1]*p[1], H[1][0]*p[0] + H[1][1]*p[1]];
+        let predImp = -(g[0]*p[0] + g[1]*p[1] + 0.5 * (p[0]*Hp[0] + p[1]*Hp[1]));
+        if (predImp <= 0) predImp = 1e-12;
+
+        let xCand = [x[0] + p[0], x[1] + p[1]];
+        let yCand = f(xCand[0], xCand[1]);
+        let actImp = y - yCand;
+        let r = actImp / predImp;
+
+        // Sub-paso A: Evaluación del ratio r
+        steps.push({
+            tipo: "eval",
+            titulo: `Iteración ${k} — Evaluación del Ratio r (η)`,
+            x: [...x], delta: delta, p: [...p], normP: normP,
+            xCand: [...xCand], yCand: yCand, r: r,
+            activeLine: "l4",
+            accepted: (r >= eta1),
+            latex: `\\begin{aligned}
+            x_k &= [${x[0].toFixed(3)}, ${x[1].toFixed(3)}]^T, \\quad f(x_k) = ${y.toFixed(3)}, \\quad \\delta = ${delta.toFixed(3)} \\\\[4pt]
+            \\text{Paso calculado } p &= [${p[0].toFixed(3)}, ${p[1].toFixed(3)}]^T, \\quad \\|p\\| = ${normP.toFixed(3)} \\\\[4pt]
+            \\Delta y_{\\text{pred}} &= ${predImp.toFixed(3)}, \\quad \\Delta y_{\\text{act}} = ${actImp.toFixed(3)} \\\\[6pt]
+            r = \\eta &= \\frac{\\Delta y_{\\text{act}}}{\\Delta y_{\\text{pred}}} = \\mathbf{${r.toFixed(3)}}
+            \\end{aligned}`
+        });
+
+        if (r < eta1) {
+            let oldDelta = delta;
+            delta = delta * gamma1;
+            steps.push({
+                tipo: "update",
+                titulo: `Iteración ${k} — Decisión: Rechazar y Contraer Radio`,
+                x: [...x], delta: delta, p: [...p], normP: normP,
+                xCand: [...xCand], yCand: yCand, r: r,
+                activeLine: "l6",
+                accepted: false,
+                latex: `\\begin{aligned}
+                \\text{Condición: } & r = ${r.toFixed(3)} < \\eta_1 = ${eta1} \\\\[4pt]
+                \\text{Decisión: } & \\mathbf{\\text{PASO RECHAZADO (el modelo cuadrático no es fiable)}} \\\\[4pt]
+                x_{k+1} &= x_k = [${x[0].toFixed(3)}, ${x[1].toFixed(3)}]^T \\\\[4pt]
+                \\delta_{k+1} &= \\delta_k \\cdot \\gamma_1 = ${oldDelta.toFixed(3)} \\cdot 0.5 = \\mathbf{${delta.toFixed(3)}}
+                \\end{aligned}`
+            });
+        } else {
+            let oldDelta = delta;
+            let expand = (r > eta2 && normP >= 0.9 * delta);
+            if (expand) delta = delta * gamma2;
+            x = [...xCand];
+            steps.push({
+                tipo: "update",
+                titulo: `Iteración ${k} — Decisión: Aceptar Paso${expand ? ' y Expandir' : ''}`,
+                x: [...x], delta: delta, p: [...p], normP: normP,
+                xCand: [...xCand], yCand: yCand, r: r,
+                activeLine: expand ? "l10" : "l8",
+                accepted: true,
+                latex: `\\begin{aligned}
+                \\text{Condición: } & r = ${r.toFixed(3)} \\ge \\eta_1 = ${eta1} \\\\[4pt]
+                \\text{Decisión: } & \\mathbf{\\text{PASO ACEPTADO}} \\\\[4pt]
+                x_{k+1} &= [${x[0].toFixed(3)}, ${x[1].toFixed(3)}]^T, \\quad f(x_{k+1}) = ${yCand.toFixed(3)} \\\\[4pt]
+                ${expand ? `\\delta_{k+1} &= \\delta_k \\cdot \\gamma_2 = ${oldDelta.toFixed(3)} \\cdot 2.0 = \\mathbf{${delta.toFixed(3)}}` : `\\delta_{k+1} &= \\mathbf{${delta.toFixed(3)}} \\text{ (sin cambios)}`}
+                \\end{aligned}`
+            });
+        }
+    }
+
+    steps.push({
+        tipo: "final",
+        titulo: "Resultado Final: Proceso de Región de Confianza",
+        x: [...x], delta: delta, p: [0, 0], normP: 0,
+        xCand: [...x], yCand: f(x[0], x[1]), r: 1.0,
+        activeLine: "l11",
+        accepted: true,
+        latex: `\\begin{aligned}
+        \\mathbf{x^* \\text{ actual: }} & [${x[0].toFixed(4)}, ${x[1].toFixed(4)}]^T \\\\[4pt]
+        \\mathbf{f(x^*) = } & \\mathbf{${f(x[0], x[1]).toFixed(4)}} \\\\[4pt]
+        \\text{Radio final } \\delta &= ${delta.toFixed(4)}
+        \\end{aligned}`
+    });
+
+    return steps;
+}
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function recalcular() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("btnAuto").innerText = "► Auto"; }
+    const x1Val = parseFloat(document.getElementById("inputX1").value);
+    const x2Val = parseFloat(document.getElementById("inputX2").value);
+    const deltaVal = parseFloat(document.getElementById("inputDelta").value);
+    const eta1Val = parseFloat(document.getElementById("inputEta1").value);
+    const eta2Val = parseFloat(document.getElementById("inputEta2").value);
+    const kVal = parseInt(document.getElementById("inputK").value);
+
+    microSteps = generarTrazaTrustRegion(x1Val, x2Val, deltaVal, eta1Val, eta2Val, kVal);
+    currentIdx = 0;
+    actualizarVista();
+}
+
+function toX(x1) { return 60 + ((x1 + 1.8) / 3.0) * (canvas.width - 120); }
+function toY(x2) { return (canvas.height - 40) - ((x2 - 0.2) / 2.2) * (canvas.height - 80); }
+function scaleDist(d) { return (d / 3.0) * (canvas.width - 120); }
+
+function dibujarPaso() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const st = microSteps[currentIdx];
+
+    // Curvas de nivel
+    ctx.strokeStyle = "#1e293b";
+    ctx.lineWidth = 1;
+    for (let c = 5; c <= 80; c += 15) {
+        ctx.beginPath();
+        for (let px1 = -1.8; px1 <= 1.2; px1 += 0.05) {
+            const py1 = px1*px1 + Math.sqrt(c/100.0);
+            const cx = toX(px1), cy = toY(py1);
+            if (px1 === -1.8) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+    }
+
+    // Región de confianza
+    const cx = toX(st.x[0]), cy = toY(st.x[1]);
+    const rPix = scaleDist(st.delta);
+
+    ctx.fillStyle = st.accepted ? "rgba(34, 197, 94, 0.15)" : "rgba(236, 72, 153, 0.15)";
+    ctx.beginPath(); ctx.arc(cx, cy, rPix, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = st.accepted ? "#22c55e" : "#ec4899";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Vector p
+    const candX = toX(st.x[0] + st.p[0]);
+    const candY = toY(st.x[1] + st.p[1]);
+
+    ctx.strokeStyle = st.accepted ? "#22c55e" : "#ef4444";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(candX, candY);
+    ctx.stroke();
+
+    // Marcador del punto candidato
+    ctx.fillStyle = st.accepted ? "#22c55e" : "#ef4444";
+    ctx.beginPath(); ctx.arc(candX, candY, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillText(st.accepted ? "Paso Aceptado" : "Rechazado", candX + 10, candY);
+
+    // Punto x_k
+    ctx.fillStyle = "#38bdf8";
+    ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.font = "bold 12px system-ui";
+    ctx.fillText(`x_k [${st.x[0].toFixed(2)}, ${st.x[1].toFixed(2)}]`, cx - 35, cy - 12);
+
+    ctx.fillStyle = "#fbcfe8";
+    ctx.fillText(`Radio δ = ${st.delta.toFixed(2)}`, cx + rPix * 0.7, cy - rPix * 0.7);
+}
+
+function actualizarVista() {
+    const st = microSteps[currentIdx];
+    document.getElementById("stepCounter").innerText = `Micro-Paso ${currentIdx + 1} / ${microSteps.length}`;
+    document.getElementById("btnPrev").disabled = (currentIdx === 0);
+    document.getElementById("btnNext").disabled = (currentIdx === microSteps.length - 1);
+    document.getElementById("calcTitle").innerText = st.titulo;
+    renderLatex("latexContainer", st.latex);
+    highlightLine(st.activeLine);
+    dibujarPaso();
+}
+
+function nextStep() { if (currentIdx < microSteps.length - 1) { currentIdx++; actualizarVista(); } }
+function prevStep() { if (currentIdx > 0) { currentIdx--; actualizarVista(); } }
+function resetStep() { currentIdx = 0; actualizarVista(); }
+function toggleAutoPlay() {
+    const btn = document.getElementById("btnAuto");
+    if (autoTimer) {
+        clearInterval(autoTimer); autoTimer = null; btn.innerText = "► Auto";
+    } else {
+        btn.innerText = "❚❚ Pausa";
+        autoTimer = setInterval(() => {
+            if (currentIdx < microSteps.length - 1) nextStep();
+            else { clearInterval(autoTimer); autoTimer = null; btn.innerText = "► Auto"; }
+        }, 1800);
+    }
+}
+
+window.addEventListener("load", () => recalcular());
+</script>
+
+</body>
+</html>

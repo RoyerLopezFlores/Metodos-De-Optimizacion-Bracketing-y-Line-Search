@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shubert-Piyavskii — Dashboard Interactivo con LaTeX y Pseudocódigo</title>
+    <!-- KaTeX para renderizado de LaTeX en HTML -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --danger: #ef4444;
+            --highlight: #facc15;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 16px;
+        }
+        .header {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h1 { margin: 0; font-size: 1.5rem; color: var(--accent); }
+        .params-bar {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .param-group { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+        input[type="number"] {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            width: 80px;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #0891b2;
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover { background: #0e7490; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+        .btn-restart { background: #475569; }
+        .btn-restart:hover { background: #334155; }
+        .main-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 16px;
+        }
+        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .canvas-wrapper {
+            background: #020617;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+        }
+        canvas { display: block; width: 100%; height: 420px; }
+        .side-col { display: flex; flex-direction: column; gap: 16px; }
+        .calc-panel {
+            background: #0f172a;
+            border-left: 4px solid var(--accent);
+            border-radius: 6px;
+            padding: 14px;
+            min-height: 200px;
+        }
+        .calc-title { font-weight: bold; color: var(--accent); margin-bottom: 8px; font-size: 1rem; }
+        .pseudo-panel {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: "Fira Code", monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .code-line {
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: pre;
+            display: flex;
+            gap: 10px;
+        }
+        .line-num { color: #64748b; width: 22px; text-align: right; user-select: none; }
+        .active-line {
+            background: rgba(250, 204, 21, 0.25);
+            border-left: 3px solid var(--highlight);
+            color: #fef08a;
+            font-weight: 600;
+        }
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>Método de Shubert-Piyavskii (Optimización Global)</h1>
+        <small style="color: #94a3b8;">Simulación didáctica interactiva: cálculo analítico en LaTeX y pseudocódigo reactivo</small>
+    </div>
+</div>
+
+<!-- BARRA DE PARÁMETROS -->
+<div class="params-bar">
+    <div class="param-group">
+        <label>Límite a:</label>
+        <input type="number" id="inputA" value="2.7" step="0.5">
+    </div>
+    <div class="param-group">
+        <label>Límite b:</label>
+        <input type="number" id="inputB" value="7.5" step="0.5">
+    </div>
+    <div class="param-group">
+        <label>Lipschitz (&ell;):</label>
+        <input type="number" id="inputL" value="4.5" step="0.5" min="1.0">
+    </div>
+    <div class="param-group">
+        <label>Tolerancia &epsilon;:</label>
+        <input type="number" id="inputEps" value="0.05" step="0.01" min="0.001">
+    </div>
+    <div class="param-group">
+        <label>Máx. Pasos:</label>
+        <input type="number" id="inputMax" value="10" step="1" min="3" max="25">
+    </div>
+    <button onclick="recalcular()">&#9654; Iniciar Optimización</button>
+</div>
+
+<div class="main-grid">
+    <!-- PANEL IZQUIERDO: CANVAS -->
+    <div class="panel">
+        <div class="canvas-wrapper">
+            <canvas id="canvas" width="700" height="420"></canvas>
+        </div>
+        <div class="nav-controls">
+            <button id="btnPrev" onclick="prevStep()">&#9664; Anterior</button>
+            <button id="btnNext" onclick="nextStep()">Siguiente &#9654;</button>
+            <button class="btn-restart" onclick="resetStep()">&#8634; Reiniciar</button>
+            <button id="btnAuto" onclick="toggleAutoPlay()">&#9658; Auto</button>
+            <span id="stepCounter" style="margin-left:auto; font-weight:bold; color:var(--accent);">Micro-Paso 0 / 0</span>
+        </div>
+    </div>
+
+    <!-- PANEL DERECHO: LATEX + PSEUDOCÓDIGO -->
+    <div class="side-col">
+        <!-- CÁLCULOS MATEMÁTICOS EN LATEX -->
+        <div class="panel calc-panel">
+            <div class="calc-title" id="calcTitle">Cálculos de la Envolvente en Diente de Sierra</div>
+            <div id="latexContainer">Cargando KaTeX...</div>
+        </div>
+
+        <!-- PSEUDOCÓDIGO CON RESALTADO -->
+        <div class="panel">
+            <div style="font-weight:bold; margin-bottom:8px; font-size:0.95rem; color:#94a3b8;">
+                Pseudocódigo Activo (Línea en Ejecución)
+            </div>
+            <div class="pseudo-panel" id="pseudoCode">
+                <div class="code-line" id="l1"><span class="line-num">1</span><span>A = Pt(a, f(a));  M = Pt(m, f(m));  B = Pt(b, f(b))</span></div>
+                <div class="code-line" id="l2"><span class="line-num">2</span><span>pts = [A, Interseccion(A, M, l), M, Interseccion(M, B, l), B]</span></div>
+                <div class="code-line" id="l3"><span class="line-num">3</span><span>mientras Delta &gt; eps hacer:</span></div>
+                <div class="code-line" id="l4"><span class="line-num">4</span><span>    i = argmin(P.y para P en vertices_inferiores)</span></div>
+                <div class="code-line" id="l5"><span class="line-num">5</span><span>    P_real = Pt(pts[i].x, f(pts[i].x))</span></div>
+                <div class="code-line" id="l6"><span class="line-num">6</span><span>    Delta = P_real.y - pts[i].y</span></div>
+                <div class="code-line" id="l7"><span class="line-num">7</span><span>    si Delta &lt;= eps:  romper</span></div>
+                <div class="code-line" id="l8"><span class="line-num">8</span><span>    P_prev = Interseccion(pts[i-1], P_real, l)</span></div>
+                <div class="code-line" id="l9"><span class="line-num">9</span><span>    P_next = Interseccion(P_real, pts[i+1], l)</span></div>
+                <div class="code-line" id="l10"><span class="line-num">10</span><span>    reemplazar pts[i] por [P_prev, P_real, P_next]</span></div>
+                <div class="code-line" id="l11"><span class="line-num">11</span><span>retornar mejor_punto_evaluado, intervalos</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function f(x) { return Math.sin(x) + Math.sin(10.0 * x / 3.0); }
+
+class Pt {
+    constructor(x, y) { this.x = x; this.y = y; }
+}
+
+function getIntersection(A, B, l) {
+    const t = ((A.y - B.y) - l * (A.x - B.x)) / (2.0 * l);
+    return new Pt(A.x + t, A.y - t * l);
+}
+
+let microSteps = [];
+let currentIdx = 0;
+let autoTimer = null;
+
+function renderLatex(elementId, latexStr) {
+    const el = document.getElementById(elementId);
+    if (window.katex) katex.render(latexStr, el, { throwOnError: false, displayMode: true });
+    else el.innerText = latexStr;
+}
+
+function highlightLine(lineId) {
+    document.querySelectorAll(".code-line").forEach(l => l.classList.remove("active-line"));
+    if (lineId) {
+        const target = document.getElementById(lineId);
+        if (target) target.classList.add("active-line");
+    }
+}
+
+function generarTrazaShubertPiyavskii(a, b, l, eps, maxIt) {
+    const steps = [];
+    const m = (a + b) / 2.0;
+    const A = new Pt(a, f(a));
+    const M = new Pt(m, f(m));
+    const B = new Pt(b, f(b));
+
+    const pts = [
+        A,
+        getIntersection(A, M, l),
+        M,
+        getIntersection(M, B, l),
+        B
+    ];
+
+    steps.push({
+        tipo: "init",
+        titulo: "Inicialización de la Sierra con Extremos y Punto Medio",
+        pts: pts.map(p => new Pt(p.x, p.y)),
+        selectedLower: null,
+        activeLine: "l2",
+        latex: `\\begin{aligned}
+        A &= (${a.toFixed(2)}, ${A.y.toFixed(3)}), \\quad M = (${m.toFixed(2)}, ${M.y.toFixed(3)}), \\quad B = (${b.toFixed(2)}, ${B.y.toFixed(3)}) \\\\[4pt]
+        \\text{Pendiente Lipschitz: } & \\pm \\ell = \\pm ${l.toFixed(2)} \\\\[4pt]
+        \\text{Vértices inferiores: } & P_{AM} = (${pts[1].x.toFixed(3)}, ${pts[1].y.toFixed(3)}), \\quad P_{MB} = (${pts[3].x.toFixed(3)}, ${pts[3].y.toFixed(3)})
+        \\end{aligned}`
+    });
+
+    let k = 0;
+    let deltaErr = Infinity;
+
+    while (deltaErr > eps && k < maxIt) {
+        k++;
+        // Vértices inferiores en índices impares
+        let lowerIdxs = [];
+        for (let i = 1; i < pts.length; i += 2) lowerIdxs.push(i);
+        let bestIdx = lowerIdxs.reduce((minI, currI) => pts[currI].y < pts[minI].y ? currI : minI, lowerIdxs[0]);
+        let cand = pts[bestIdx];
+        let realY = f(cand.x);
+        let P_real = new Pt(cand.x, realY);
+        deltaErr = P_real.y - cand.y;
+
+        // Sub-paso A: Selección del vértice más bajo y prueba
+        steps.push({
+            tipo: "eval",
+            titulo: `Iteración ${k} — Selección del Vértice Inferior Mínimo`,
+            pts: pts.map(p => new Pt(p.x, p.y)),
+            selectedLower: cand,
+            activeLine: "l6",
+            latex: `\\begin{aligned}
+            \\text{Vértice inferior seleccionado: } & x_{\\text{saw}} = ${cand.x.toFixed(4)}, \\quad y_{\\text{saw}} = ${cand.y.toFixed(4)} \\\\[4pt]
+            \\text{Evaluación real: } & f(${cand.x.toFixed(4)}) = ${realY.toFixed(4)} \\\\[6pt]
+            \\Delta = f(x) - y_{\\text{saw}} &= ${realY.toFixed(4)} - (${cand.y.toFixed(4)}) = \\mathbf{${deltaErr.toFixed(4)}} \\\\[4pt]
+            \\mathbf{¿\\Delta \\le \\epsilon?} &\\iff ${deltaErr.toFixed(4)} \\le ${eps} \\implies \\mathbf{${deltaErr <= eps ? "\\text{PARADA}" : "\\text{CONTINUAR}"}}
+            \\end{aligned}`
+        });
+
+        if (deltaErr <= eps) break;
+
+        // Sub-paso B: Subdivisión de la sierra
+        let P_prev = getIntersection(pts[bestIdx - 1], P_real, l);
+        let P_next = getIntersection(P_real, pts[bestIdx + 1], l);
+
+        pts.splice(bestIdx, 1, P_prev, P_real, P_next);
+
+        steps.push({
+            tipo: "update",
+            titulo: `Iteración ${k} — Actualización de la Envolvente Inferior`,
+            pts: pts.map(p => new Pt(p.x, p.y)),
+            selectedLower: null,
+            activeLine: "l10",
+            latex: `\\begin{aligned}
+            \\text{Punto muestreado insertado: } & (${P_real.x.toFixed(4)}, ${P_real.y.toFixed(4)}) \\\\[4pt]
+            \\text{Nuevas intersecciones: } & P_{\\text{prev}} = (${P_prev.x.toFixed(3)}, ${P_prev.y.toFixed(3)}), \\quad P_{\\text{next}} = (${P_next.x.toFixed(3)}, ${P_next.y.toFixed(3)}) \\\\[4pt]
+            \\text{La sierra asciende, } & \\text{reduciendo la incertidumbre en ese valle.}
+            \\end{aligned}`
+        });
+    }
+
+    let upperPts = [];
+    for (let i = 0; i < pts.length; i += 2) upperPts.push(pts[i]);
+    let bestUpper = upperPts.reduce((minP, currP) => currP.y < minP.y ? currP : minP, upperPts[0]);
+
+    steps.push({
+        tipo: "final",
+        titulo: "Mínimo Global Localizado Determinísticamente",
+        pts: pts.map(p => new Pt(p.x, p.y)),
+        selectedLower: null,
+        activeLine: "l11",
+        latex: `\\begin{aligned}
+        \\mathbf{x^* \\text{ global: }} & \\mathbf{${bestUpper.x.toFixed(5)}}, \\quad \\mathbf{f(x^*) = ${bestUpper.y.toFixed(5)}} \\\\[4pt]
+        \\text{Tolerancia alcanzada: } & \\Delta = ${deltaErr.toFixed(4)} \\le \\epsilon = ${eps} \\\\[4pt]
+        \\text{Garantía matemática: } & \\min_{x \\in [a, b]} f(x) \\ge f(x^*) - \\epsilon
+        \\end{aligned}`
+    });
+
+    return steps;
+}
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function recalcular() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("btnAuto").innerText = "► Auto"; }
+    const aVal = parseFloat(document.getElementById("inputA").value);
+    const bVal = parseFloat(document.getElementById("inputB").value);
+    const lVal = parseFloat(document.getElementById("inputL").value);
+    const epsVal = parseFloat(document.getElementById("inputEps").value);
+    const maxVal = parseInt(document.getElementById("inputMax").value);
+
+    microSteps = generarTrazaShubertPiyavskii(aVal, bVal, lVal, epsVal, maxVal);
+    currentIdx = 0;
+    actualizarVista();
+}
+
+function toX(x, minX, maxX) { return 60 + ((x - minX) / (maxX - minX)) * (canvas.width - 120); }
+function toY(y, minY, maxY) { return (canvas.height - 50) - ((y - minY) / (maxY - minY)) * (canvas.height - 80); }
+
+function dibujarPaso() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const st = microSteps[currentIdx];
+    const aInit = parseFloat(document.getElementById("inputA").value);
+    const bInit = parseFloat(document.getElementById("inputB").value);
+    const minX = aInit - 0.2, maxX = bInit + 0.2;
+    const minY = -6.5, maxY = 2.5;
+
+    // Eje X
+    ctx.strokeStyle = "#334155";
+    ctx.beginPath();
+    ctx.moveTo(toX(minX, minX, maxX), toY(0, minY, maxY));
+    ctx.lineTo(toX(maxX, minX, maxX), toY(0, minY, maxY));
+    ctx.stroke();
+
+    // Curva f(x)
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let px = aInit; px <= bInit; px += 0.02) {
+        const cx = toX(px, minX, maxX), cy = toY(f(px), minY, maxY);
+        if (px === aInit) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+
+    // Envolvente en diente de sierra
+    ctx.strokeStyle = "#fb923c";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < st.pts.length; i++) {
+        const cx = toX(st.pts[i].x, minX, maxX);
+        const cy = toY(st.pts[i].y, minY, maxY);
+        if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+
+    // Puntos superiores evaluados
+    for (let i = 0; i < st.pts.length; i += 2) {
+        const cx = toX(st.pts[i].x, minX, maxX);
+        const cy = toY(st.pts[i].y, minY, maxY);
+        ctx.fillStyle = "#22c55e";
+        ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    // Vértices inferiores
+    for (let i = 1; i < st.pts.length; i += 2) {
+        const cx = toX(st.pts[i].x, minX, maxX);
+        const cy = toY(st.pts[i].y, minY, maxY);
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Vértice inferior seleccionado
+    if (st.selectedLower) {
+        const selX = toX(st.selectedLower.x, minX, maxX);
+        const selY = toY(st.selectedLower.y, minY, maxY);
+        ctx.strokeStyle = "#facc15";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(selX, selY, 8, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = "#facc15";
+        ctx.font = "bold 12px system-ui";
+        ctx.fillText(`Muestrear aquí (x=${st.selectedLower.x.toFixed(2)})`, selX - 50, selY + 22);
+    }
+}
+
+function actualizarVista() {
+    const st = microSteps[currentIdx];
+    document.getElementById("stepCounter").innerText = `Micro-Paso ${currentIdx + 1} / ${microSteps.length}`;
+    document.getElementById("btnPrev").disabled = (currentIdx === 0);
+    document.getElementById("btnNext").disabled = (currentIdx === microSteps.length - 1);
+    document.getElementById("calcTitle").innerText = st.titulo;
+    renderLatex("latexContainer", st.latex);
+    highlightLine(st.activeLine);
+    dibujarPaso();
+}
+
+function nextStep() { if (currentIdx < microSteps.length - 1) { currentIdx++; actualizarVista(); } }
+function prevStep() { if (currentIdx > 0) { currentIdx--; actualizarVista(); } }
+function resetStep() { currentIdx = 0; actualizarVista(); }
+function toggleAutoPlay() {
+    const btn = document.getElementById("btnAuto");
+    if (autoTimer) {
+        clearInterval(autoTimer); autoTimer = null; btn.innerText = "► Auto";
+    } else {
+        btn.innerText = "❚❚ Pausa";
+        autoTimer = setInterval(() => {
+            if (currentIdx < microSteps.length - 1) nextStep();
+            else { clearInterval(autoTimer); autoTimer = null; btn.innerText = "► Auto"; }
+        }, 1800);
+    }
+}
+
+window.addEventListener("load", () => recalcular());
+</script>
+
+</body>
+</html>

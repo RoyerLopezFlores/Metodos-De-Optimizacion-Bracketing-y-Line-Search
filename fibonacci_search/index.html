@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda de Fibonacci — Dashboard Interactivo con LaTeX y Pseudocódigo</title>
+    <!-- KaTeX para renderizado de LaTeX en HTML -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --accent: #38bdf8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --highlight: #facc15;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 16px;
+        }
+        .header {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h1 { margin: 0; font-size: 1.5rem; color: var(--accent); }
+        .params-bar {
+            max-width: 1400px;
+            margin: 0 auto 16px auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .param-group { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+        input[type="number"] {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            width: 80px;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover { background: #0369a1; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+        .btn-restart { background: #475569; }
+        .btn-restart:hover { background: #334155; }
+        .main-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 16px;
+        }
+        @media (max-width: 1000px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .canvas-wrapper {
+            background: #020617;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+        }
+        canvas { display: block; width: 100%; height: 420px; }
+        .side-col { display: flex; flex-direction: column; gap: 16px; }
+        .calc-panel {
+            background: #0f172a;
+            border-left: 4px solid var(--accent);
+            border-radius: 6px;
+            padding: 14px;
+            min-height: 200px;
+        }
+        .calc-title { font-weight: bold; color: var(--accent); margin-bottom: 8px; font-size: 1rem; }
+        .pseudo-panel {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: "Fira Code", monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .code-line {
+            padding: 2px 6px;
+            border-radius: 3px;
+            white-space: pre;
+            display: flex;
+            gap: 10px;
+        }
+        .line-num { color: #64748b; width: 22px; text-align: right; user-select: none; }
+        .active-line {
+            background: rgba(250, 204, 21, 0.25);
+            border-left: 3px solid var(--highlight);
+            color: #fef08a;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-cond { background: #854d0e; color: #fef08a; }
+        .badge-true { background: #14532d; color: #bbf7d0; }
+        .badge-false { background: #7f1d1d; color: #fecaca; }
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>Búsqueda de Fibonacci (Fibonacci Search)</h1>
+        <small style="color: #94a3b8;">Simulación didáctica interactiva: cálculo analítico en LaTeX y pseudocódigo reactivo</small>
+    </div>
+</div>
+
+<!-- BARRA DE PARÁMETROS -->
+<div class="params-bar">
+    <div class="param-group">
+        <label>Límite a:</label>
+        <input type="number" id="inputA" value="-2.0" step="0.5">
+    </div>
+    <div class="param-group">
+        <label>Límite b:</label>
+        <input type="number" id="inputB" value="6.0" step="0.5">
+    </div>
+    <div class="param-group">
+        <label>Evaluaciones (n):</label>
+        <input type="number" id="inputN" value="5" min="3" max="15" step="1">
+    </div>
+    <div class="param-group">
+        <label>Tolerancia &epsilon;:</label>
+        <input type="number" id="inputEps" value="0.01" step="0.005" min="0.001">
+    </div>
+    <button onclick="recalcular()">&#9654; Iniciar Optimización</button>
+</div>
+
+<div class="main-grid">
+    <!-- PANEL IZQUIERDO: CANVAS -->
+    <div class="panel">
+        <div class="canvas-wrapper">
+            <canvas id="canvas" width="700" height="420"></canvas>
+        </div>
+        <div class="nav-controls">
+            <button id="btnPrev" onclick="prevStep()">&#9664; Anterior</button>
+            <button id="btnNext" onclick="nextStep()">Siguiente &#9654;</button>
+            <button class="btn-restart" onclick="resetStep()">&#8634; Reiniciar</button>
+            <button id="btnAuto" onclick="toggleAutoPlay()">&#9658; Auto</button>
+            <span id="stepCounter" style="margin-left:auto; font-weight:bold; color:var(--accent);">Micro-Paso 0 / 0</span>
+        </div>
+    </div>
+
+    <!-- PANEL DERECHO: LATEX + PSEUDOCÓDIGO -->
+    <div class="side-col">
+        <!-- CÁLCULOS MATEMÁTICOS EN LATEX -->
+        <div class="panel calc-panel">
+            <div class="calc-title" id="calcTitle">Cálculos Matemáticos de la Iteración</div>
+            <div id="latexContainer">Cargando KaTeX...</div>
+        </div>
+
+        <!-- PSEUDOCÓDIGO CON RESALTADO -->
+        <div class="panel">
+            <div style="font-weight:bold; margin-bottom:8px; font-size:0.95rem; color:#94a3b8;">
+                Pseudocódigo Activo (Línea en Ejecución)
+            </div>
+            <div class="pseudo-panel" id="pseudoCode">
+                <div class="code-line" id="l1"><span class="line-num">1</span><span>s = (1 - sqrt(5)) / (1 + sqrt(5))</span></div>
+                <div class="code-line" id="l2"><span class="line-num">2</span><span>rho = 1 / (phi * (1 - s^(n+1)) / (1 - s^n))</span></div>
+                <div class="code-line" id="l3"><span class="line-num">3</span><span>d = rho * b + (1 - rho) * a;  yd = f(d)</span></div>
+                <div class="code-line" id="l4"><span class="line-num">4</span><span>para i = 1 hasta n - 1 hacer:</span></div>
+                <div class="code-line" id="l5"><span class="line-num">5</span><span>    si i == n - 1:  c = eps*a + (1 - eps)*d</span></div>
+                <div class="code-line" id="l6"><span class="line-num">6</span><span>    sino:           c = rho*a + (1 - rho)*b</span></div>
+                <div class="code-line" id="l7"><span class="line-num">7</span><span>    yc = f(c)</span></div>
+                <div class="code-line" id="l8"><span class="line-num">8</span><span>    si yc &lt; yd:</span></div>
+                <div class="code-line" id="l9"><span class="line-num">9</span><span>        b = d;  d = c;  yd = yc</span></div>
+                <div class="code-line" id="l10"><span class="line-num">10</span><span>    sino:</span></div>
+                <div class="code-line" id="l11"><span class="line-num">11</span><span>        a = b;  b = c</span></div>
+                <div class="code-line" id="l12"><span class="line-num">12</span><span>    rho = 1 / (phi * (1 - s^(n-i+1)) / (1 - s^(n-i)))</span></div>
+                <div class="code-line" id="l13"><span class="line-num">13</span><span>retornar (min(a, b), max(a, b))</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función objetivo: f(x) = exp(x - 2) - x
+function f(x) {
+    return Math.exp(x - 2.0) - x;
+}
+
+const phi = (1.0 + Math.sqrt(5.0)) / 2.0;
+const s_const = (1.0 - Math.sqrt(5.0)) / (1.0 + Math.sqrt(5.0));
+
+let microSteps = [];
+let currentIdx = 0;
+let autoTimer = null;
+
+function renderLatex(elementId, latexStr) {
+    const el = document.getElementById(elementId);
+    if (window.katex) {
+        katex.render(latexStr, el, { throwOnError: false, displayMode: true });
+    } else {
+        el.innerText = latexStr;
+    }
+}
+
+function highlightLine(lineId) {
+    document.querySelectorAll(".code-line").forEach(l => l.classList.remove("active-line"));
+    if (lineId) {
+        const target = document.getElementById(lineId);
+        if (target) target.classList.add("active-line");
+    }
+}
+
+function generarTrazaFibonacci(aInit, bInit, n, eps) {
+    const steps = [];
+    let a = aInit, b = bInit;
+    
+    // Paso inicial: calcular rho inicial y punto d
+    let rho = 1.0 / (phi * (1.0 - Math.pow(s_const, n + 1)) / (1.0 - Math.pow(s_const, n)));
+    let d = rho * b + (1.0 - rho) * a;
+    let yd = f(d);
+    
+    steps.push({
+        tipo: "init",
+        titulo: "Inicialización de Parámetros de Fibonacci",
+        a: Math.min(a, b), b: Math.max(a, b),
+        c: null, d: d, yc: null, yd: yd,
+        activeLine: "l3",
+        excludedStart: null, excludedEnd: null,
+        latex: `\\begin{aligned}
+        s &= \\frac{1 - \\sqrt{5}}{1 + \\sqrt{5}} \\approx -0.38197, \\quad \\phi \\approx 1.61803 \\\\[4pt]
+        \\rho_1 &= \\frac{1}{\\phi \\left(\\frac{1 - s^{${n+1}}}{1 - s^{${n}}}\\right)} = ${rho.toFixed(5)} \\\\[4pt]
+        d &= \\rho_1 b + (1 - \\rho_1)a = ${d.toFixed(5)}, \\quad f(d) = ${yd.toFixed(5)}
+        \\end{aligned}`,
+        desc: "Se calcula la razón inicial de Fibonacci y el primer punto de evaluación interior d."
+    });
+
+    for (let i = 1; i < n; i++) {
+        let c;
+        let esFinal = (i === n - 1);
+        if (esFinal) {
+            c = eps * a + (1.0 - eps) * d;
+        } else {
+            c = rho * a + (1.0 - rho) * b;
+        }
+        let yc = f(c);
+
+        // Sub-paso A: Evaluar condición f(c) < f(d)
+        let cond = (yc < yd);
+        steps.push({
+            tipo: "eval",
+            titulo: `Iteración ${i}/${n-1} — Evaluación de Condición`,
+            a: Math.min(a, b), b: Math.max(a, b),
+            c: c, d: d, yc: yc, yd: yd,
+            activeLine: "l8",
+            excludedStart: null, excludedEnd: null,
+            latex: `\\begin{aligned}
+            \\text{Punto } c &= ${c.toFixed(5)}, \\quad f(c) = ${yc.toFixed(5)} \\\\[4pt]
+            \\text{Punto } d &= ${d.toFixed(5)}, \\quad f(d) = ${yd.toFixed(5)} \\\\[6pt]
+            \\mathbf{¿f(c) < f(d)?} &\\iff ${yc.toFixed(5)} < ${yd.toFixed(5)} \\implies \\mathbf{${cond ? "\\text{VERDADERO}" : "\\text{FALSO}"}}
+            \\end{aligned}`,
+            desc: cond ? "Como f(c) < f(d), el mínimo debe residir a la izquierda de d." : "Como f(c) >= f(d), el mínimo reside a la derecha de c."
+        });
+
+        // Sub-paso B: Actualizar intervalo y descartar región
+        let oldA = a, oldB = b;
+        let excStart = null, excEnd = null;
+        if (cond) {
+            excStart = d; excEnd = b;
+            b = d; d = c; yd = yc;
+            steps.push({
+                tipo: "update",
+                titulo: `Iteración ${i}/${n-1} — Decisión: Descartar Tramo Derecho`,
+                a: Math.min(a, b), b: Math.max(a, b),
+                c: c, d: d, yc: yc, yd: yd,
+                activeLine: "l9",
+                excludedStart: Math.min(excStart, excEnd), excludedEnd: Math.max(excStart, excEnd),
+                latex: `\\begin{aligned}
+                \\text{Decisión: } & b \\leftarrow d = ${b.toFixed(5)}, \\quad d \\leftarrow c = ${d.toFixed(5)} \\\\[4pt]
+                \\text{Región descartada: } & [${Math.min(excStart, excEnd).toFixed(5)}, ${Math.max(excStart, excEnd).toFixed(5)}] \\\\[4pt]
+                \\text{Nuevo intervalo activo: } & [a, b] = [${Math.min(a, b).toFixed(5)}, ${Math.max(a, b).toFixed(5)}]
+                \\end{aligned}`,
+                desc: "Se preserva la muestra c como nuevo d para evitar recalcular la función objetivo."
+            });
+        } else {
+            excStart = a; excEnd = c;
+            a = b; b = c;
+            steps.push({
+                tipo: "update",
+                titulo: `Iteración ${i}/${n-1} — Decisión: Descartar Tramo Izquierdo`,
+                a: Math.min(a, b), b: Math.max(a, b),
+                c: c, d: d, yc: yc, yd: yd,
+                activeLine: "l11",
+                excludedStart: Math.min(excStart, excEnd), excludedEnd: Math.max(excStart, excEnd),
+                latex: `\\begin{aligned}
+                \\text{Decisión: } & a \\leftarrow b = ${a.toFixed(5)}, \\quad b \\leftarrow c = ${b.toFixed(5)} \\\\[4pt]
+                \\text{Región descartada: } & [${Math.min(excStart, excEnd).toFixed(5)}, ${Math.max(excStart, excEnd).toFixed(5)}] \\\\[4pt]
+                \\text{Nuevo intervalo activo: } & [a, b] = [${Math.min(a, b).toFixed(5)}, ${Math.max(a, b).toFixed(5)}]
+                \\end{aligned}`,
+                desc: "El tramo izquierdo queda excluido y los límites se reasignan manteniendo el orden válido."
+            });
+        }
+
+        rho = 1.0 / (phi * (1.0 - Math.pow(s_const, n - i + 1)) / (1.0 - Math.pow(s_const, n - i)));
+    }
+
+    // Paso final de resultado
+    let aFinal = Math.min(a, b);
+    let bFinal = Math.max(a, b);
+    let xOpt = (aFinal + bFinal) / 2.0;
+    steps.push({
+        tipo: "final",
+        titulo: "Resultado Final: Mínimo Local Acotado",
+        a: aFinal, b: bFinal,
+        c: null, d: null, yc: null, yd: null,
+        activeLine: "l13",
+        excludedStart: null, excludedEnd: null,
+        latex: `\\begin{aligned}
+        \\text{Intervalo final acotado: } & [${aFinal.toFixed(6)}, ${bFinal.toFixed(6)}] \\\\[4pt]
+        \\text{Longitud final: } & L_n = ${(bFinal - aFinal).toFixed(6)} \\approx \\frac{${(bInit - aInit).toFixed(2)}}{F_{${n+1}}} \\\\[6pt]
+        \\mathbf{x^* \\text{ estimado: }} & \\mathbf{${xOpt.toFixed(6)}}, \\quad \\mathbf{f(x^*) = ${f(xOpt).toFixed(6)}}
+        \\end{aligned}`,
+        desc: "Se ha alcanzado la reducción óptima minimax para el presupuesto asignado."
+    });
+
+    return steps;
+}
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function recalcular() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById("btnAuto").innerText = "► Auto"; }
+    const aVal = parseFloat(document.getElementById("inputA").value);
+    const bVal = parseFloat(document.getElementById("inputB").value);
+    const nVal = parseInt(document.getElementById("inputN").value);
+    const epsVal = parseFloat(document.getElementById("inputEps").value);
+
+    microSteps = generarTrazaFibonacci(aVal, bVal, nVal, epsVal);
+    currentIdx = 0;
+    actualizarVista();
+}
+
+function toX(x, minX, maxX) {
+    return 60 + ((x - minX) / (maxX - minX)) * (canvas.width - 120);
+}
+function toY(y, minY, maxY) {
+    return (canvas.height - 50) - ((y - minY) / (maxY - minY)) * (canvas.height - 80);
+}
+
+function dibujarPaso() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const st = microSteps[currentIdx];
+    const aInit = parseFloat(document.getElementById("inputA").value);
+    const bInit = parseFloat(document.getElementById("inputB").value);
+    
+    const minX = Math.min(aInit, bInit) - 0.5;
+    const maxX = Math.max(aInit, bInit) + 0.5;
+    const minY = -1.5, maxY = 5.5;
+
+    // Eje X
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(toX(minX, minX, maxX), toY(0, minY, maxY));
+    ctx.lineTo(toX(maxX, minX, maxX), toY(0, minY, maxY));
+    ctx.stroke();
+
+    // Región descartada sombreada
+    if (st.excludedStart !== null && st.excludedEnd !== null) {
+        ctx.fillStyle = "rgba(239, 68, 68, 0.22)";
+        const x1 = toX(st.excludedStart, minX, maxX);
+        const x2 = toX(st.excludedEnd, minX, maxX);
+        ctx.fillRect(Math.min(x1, x2), 20, Math.abs(x2 - x1), canvas.height - 70);
+    }
+
+    // Intervalo activo actual sombreado en verde
+    ctx.fillStyle = "rgba(34, 197, 94, 0.16)";
+    const ax = toX(st.a, minX, maxX);
+    const bx = toX(st.b, minX, maxX);
+    ctx.fillRect(Math.min(ax, bx), 20, Math.abs(bx - ax), canvas.height - 70);
+
+    // Curva de f(x)
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let px = minX; px <= maxX; px += 0.05) {
+        const cx = toX(px, minX, maxX);
+        const cy = toY(f(px), minY, maxY);
+        if (px === minX) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+
+    // Límites verticales a y b
+    ctx.strokeStyle = "#22c55e";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(ax, 20); ctx.lineTo(ax, canvas.height - 50);
+    ctx.moveTo(bx, 20); ctx.lineTo(bx, canvas.height - 50);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = "#22c55e";
+    ctx.font = "bold 12px system-ui";
+    ctx.fillText(`a = ${st.a.toFixed(2)}`, ax - 25, canvas.height - 30);
+    ctx.fillText(`b = ${st.b.toFixed(2)}`, bx - 25, canvas.height - 30);
+
+    // Puntos c y d
+    function dibujarPunto(xVal, yVal, label, color) {
+        if (xVal === null || yVal === null) return;
+        const cx = toX(xVal, minX, maxX);
+        const cy = toY(yVal, minY, maxY);
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.font = "bold 12px system-ui";
+        ctx.fillText(`${label} (${xVal.toFixed(2)}, ${yVal.toFixed(2)})`, cx - 35, cy - 12);
+    }
+
+    dibujarPunto(st.c, st.yc, "c", "#facc15");
+    dibujarPunto(st.d, st.yd, "d", "#f43f5e");
+
+    // Óptimo real
+    const optX = toX(2.0, minX, maxX);
+    const optY = toY(f(2.0), minY, maxY);
+    ctx.fillStyle = "#a855f7";
+    ctx.beginPath(); ctx.arc(optX, optY, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillText("x* = 2.0", optX - 20, optY + 20);
+}
+
+function actualizarVista() {
+    const st = microSteps[currentIdx];
+    document.getElementById("stepCounter").innerText = `Micro-Paso ${currentIdx + 1} / ${microSteps.length}`;
+    document.getElementById("btnPrev").disabled = (currentIdx === 0);
+    document.getElementById("btnNext").disabled = (currentIdx === microSteps.length - 1);
+
+    document.getElementById("calcTitle").innerText = st.titulo;
+    renderLatex("latexContainer", st.latex);
+    highlightLine(st.activeLine);
+    dibujarPaso();
+}
+
+function nextStep() {
+    if (currentIdx < microSteps.length - 1) {
+        currentIdx++;
+        actualizarVista();
+    }
+}
+function prevStep() {
+    if (currentIdx > 0) {
+        currentIdx--;
+        actualizarVista();
+    }
+}
+function resetStep() {
+    currentIdx = 0;
+    actualizarVista();
+}
+function toggleAutoPlay() {
+    const btn = document.getElementById("btnAuto");
+    if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+        btn.innerText = "► Auto";
+    } else {
+        btn.innerText = "❚❚ Pausa";
+        autoTimer = setInterval(() => {
+            if (currentIdx < microSteps.length - 1) {
+                nextStep();
+            } else {
+                clearInterval(autoTimer);
+                autoTimer = null;
+                btn.innerText = "► Auto";
+            }
+        }, 1800);
+    }
+}
+
+window.addEventListener("load", () => {
+    recalcular();
+});
+</script>
+
+</body>
+</html>

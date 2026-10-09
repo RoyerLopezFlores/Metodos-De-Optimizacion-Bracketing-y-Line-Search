@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizaciones Interactivas: Métodos Numéricos de Optimización</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --accent: #38bdf8;
+            --border: #334155;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+        h1 { color: var(--accent); margin-bottom: 8px; }
+        p.subtitle { color: #94a3b8; margin-top: 0; margin-bottom: 30px; font-size: 1.1rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+        .card h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.25rem;
+            color: #f1f5f9;
+        }
+        .card p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            flex-grow: 1;
+        }
+        .tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            width: fit-content;
+        }
+        .tag-brack { background: #0369a1; color: #e0f2fe; }
+        .tag-desc { background: #9d174d; color: #fce7f3; }
+        .link-text {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Galería de Simulaciones Interactivas (HTML5 Canvas)</h1>
+    <p class="subtitle">Inspección dinámica paso a paso, evaluación de condiciones y toma de decisiones para los métodos analizados.</p>
+
+    <div class="grid">
+        <a class="card" href="fibonacci_search/index.html">
+            <span class="tag tag-brack">1. Bracketing Univariado</span>
+            <h2>Fibonacci Search</h2>
+            <p>Visualiza cómo se acota el mínimo global mediante la relación de Fibonacci, la contracción minimax óptima y la perturbación final &epsilon;.</p>
+            <div class="link-text">Abrir Simulación Interactiva &rarr;</div>
+        </a>
+
+        <a class="card" href="golden_section_search/index.html">
+            <span class="tag tag-brack">1. Bracketing Univariado</span>
+            <h2>Golden Section Search</h2>
+            <p>Comprueba la autosimilitud geométrica del número áureo &phi; &approx; 1.618 y la tasa de contracción uniforme de 0.618034 por iteración.</p>
+            <div class="link-text">Abrir Simulación Interactiva &rarr;</div>
+        </a>
+
+        <a class="card" href="quadratic_fit_search/index.html">
+            <span class="tag tag-brack">1. Bracketing Univariado</span>
+            <h2>Quadratic Fit Search</h2>
+            <p>Ajuste de parábolas interpolantes a tres puntos con cálculo del vértice analítico x* y contracción superlineal acelerada.</p>
+            <div class="link-text">Abrir Simulación Interactiva &rarr;</div>
+        </a>
+
+        <a class="card" href="shubert_piyavskii/index.html">
+            <span class="tag tag-brack">1. Optimización Global</span>
+            <h2>Shubert-Piyavskii Method</h2>
+            <p>Construcción de la envolvente inferior en diente de sierra (sawtooth) a partir de conos Lipschitz y muestreo determinista del mínimo global.</p>
+            <div class="link-text">Abrir Simulación Interactiva &rarr;</div>
+        </a>
+
+        <a class="card" href="approximate_line_search/index.html">
+            <span class="tag tag-desc">2. Descenso Local Multivariado</span>
+            <h2>Approximate Line Search</h2>
+            <p>Descenso suficiente bajo la condición de Armijo, retroceso (backtracking) de &alpha; y verificación de curvatura de Wolfe.</p>
+            <div class="link-text">Abrir Simulación Interactiva &rarr;</div>
+        </a>
+
+        <a class="card" href="trust_region/index.html">
+            <span class="tag tag-desc">2. Descenso Local Multivariado</span>
+            <h2>Trust Region Methods</h2>
+            <p>Restricción en bola circular &delta;, cálculo de ganancia real vs. predicha (ratio r / &eta;), y contracción/expansión adaptativa del radio.</p>
+            <div class="link-text">Abrir Simulación Interactiva &rarr;</div>
+        </a>
+    </div>
+</div>
+
+</body>
+</html>
